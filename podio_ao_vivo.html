@@ -76,6 +76,8 @@
   /* ── BOTAO ATUALIZAR ── */
   .btn-refresh{width:100%;padding:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;font-size:14px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;margin-top:16px;transition:all .2s;}
   .btn-refresh:active{background:rgba(255,255,255,.12);}
+  .btn-reset{width:100%;padding:13px;background:rgba(214,35,0,.15);border:1px solid rgba(214,35,0,.4);border-radius:12px;color:#ff6b6b;font-size:14px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;margin-top:8px;transition:all .2s;}
+  .btn-reset:active{background:rgba(214,35,0,.25);}
   .last-update{text-align:center;font-size:11px;color:rgba(255,255,255,.25);margin-top:8px;font-weight:600;}
 
   /* ── STATS ── */
@@ -128,8 +130,24 @@
   </div>
 
   <button class="btn-refresh" onclick="load()">&#x21BA; Atualizar Agora</button>
+  <button class="btn-reset" onclick="showReset()">&#x1F5D1;&#xFE0F; Zerar Podio</button>
   <div class="last-update" id="last-update"></div>
 
+</div>
+
+<!-- MODAL ZERAR -->
+<div id="modal-reset" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#1a1a1a;border:2px solid rgba(214,35,0,.5);border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">&#x26A0;&#xFE0F;</div>
+    <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:6px;">Zerar o Podio?</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.55);font-weight:600;margin-bottom:18px;">Todos os resultados serao apagados da planilha. Esta acao nao pode ser desfeita.</div>
+    <input type="password" id="reset-senha" placeholder="Digite a senha admin" style="width:100%;padding:11px 14px;border:2px solid rgba(255,255,255,.15);border-radius:11px;background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:Nunito,sans-serif;font-weight:600;outline:none;margin-bottom:12px;">
+    <div style="display:flex;gap:10px;">
+      <button onclick="hideReset()" style="flex:1;padding:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:11px;color:#fff;font-size:13px;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;">Cancelar</button>
+      <button onclick="confirmReset()" style="flex:1;padding:11px;background:linear-gradient(135deg,#8b0000,#D62300);border:none;border-radius:11px;color:#fff;font-size:13px;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;">&#x1F5D1;&#xFE0F; Zerar</button>
+    </div>
+    <div id="reset-msg" style="margin-top:10px;font-size:12px;font-weight:700;display:none;"></div>
+  </div>
 </div>
 
 <script>
@@ -258,6 +276,50 @@ function renderList(sorted){
 
 function fmt(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// ── ZERAR PODIO ──────────────────────────────────────────────
+const ADMIN_PASS = '123456';
+
+function showReset(){
+  const m = document.getElementById('modal-reset');
+  m.style.display='flex';
+  document.getElementById('reset-senha').value='';
+  document.getElementById('reset-msg').style.display='none';
+}
+
+function hideReset(){
+  document.getElementById('modal-reset').style.display='none';
+}
+
+async function confirmReset(){
+  const senha = document.getElementById('reset-senha').value;
+  const msg = document.getElementById('reset-msg');
+  if(senha !== ADMIN_PASS){
+    msg.textContent='❌ Senha incorreta!';
+    msg.style.color='#ff6b6b';
+    msg.style.display='block';
+    return;
+  }
+  msg.textContent='⏳ Zerando...';
+  msg.style.color='#aaa';
+  msg.style.display='block';
+  try{
+    await fetch(SCRIPT_URL+'?action=clear&t='+Date.now());
+    msg.textContent='✅ Podio zerado com sucesso!';
+    msg.style.color='#2ECC71';
+    allData=[];
+    render();
+    setTimeout(()=>hideReset(),1500);
+  }catch(e){
+    msg.textContent='❌ Erro ao zerar. Tente novamente.';
+    msg.style.color='#ff6b6b';
+  }
+}
+
+// Fechar modal clicando fora
+document.getElementById('modal-reset').addEventListener('click',function(e){
+  if(e.target===this) hideReset();
+});
 
 // Auto-refresh a cada 15s
 load();
